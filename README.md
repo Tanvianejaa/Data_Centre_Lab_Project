@@ -1,4 +1,4 @@
-# ⚡ Vision Duel: AI vs. Human (DataCenter Edge Project)
+#  Vision Duel: AI vs. Human (DataCenter Edge Project)
 
 An image recognition game where a human races a vision model to identify an object while the image
 progressively de-corrupts over a countdown.
@@ -9,7 +9,7 @@ The game is playable because of that gap, and it measures the gap while you play
 
 ---
 
-## 🎮 How a round works
+##  How a round works
 
 1. The four options appear on their own in the middle of the screen, then slide into place.
    Reading them is not charged to your clock -- the photo and the countdown wait for you.
@@ -25,7 +25,7 @@ replays the current round so nobody gets to study a paused image.
 
 ---
 
-## 🤖 The AI opponent
+##  The AI opponent
 
 A **zero-shot CLIP ViT-B/32** classifier. It looks at the same corrupted frames you see, at the same
 moments, and scores the four option strings directly.
@@ -59,7 +59,7 @@ destroy within-patch structure) while high-frequency noise barely does.
 
 ---
 
-## 🚀 Quick start
+##  Quick start
 
 If `.venv/` already exists (it does on the original dev machine), you only need:
 
@@ -93,7 +93,7 @@ run `npm run build`** for it to show up on port 8000.
 
 ---
 
-## 🧪 Scripts
+##  Scripts
 
 See **[docs/viva-guide.md](docs/viva-guide.md)** for the full explanation of the dataset choice,
 the model, the difficulty calibration, the architecture and a viva question bank.
@@ -128,7 +128,7 @@ called with one seed per round. The frame schedule is published to the client in
 
 ---
 
-## 📋 Status
+##  Status
 
 Working: real CLIP opponent, measured difficulty calibration, shared reveal clock, five corruption
 modes, pause/stop, smoke tests, and a UI rebuilt around the photograph.
