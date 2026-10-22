@@ -1,143 +1,132 @@
-#  Vision Duel: AI vs. Human (DataCenter Edge Project)
+# Vision Duel: AI vs. Human
 
-An image recognition game where a human races a vision model to identify an object while the image
-progressively de-corrupts over a countdown.
+Vision Duel is an image recognition game where a human competes against an AI model to identify objects in pictures.
 
-The premise is a real, documented phenomenon: **humans degrade gracefully under image corruption and
-neural networks fall off a cliff** (Hendrycks & Dietterich, ICLR 2019; Geirhos et al., NeurIPS 2018).
-The game is playable because of that gap, and it measures the gap while you play.
+The image starts blurry, pixelated, or distorted and becomes clearer over 3.5 seconds. The goal is to identify the object before the AI does.
 
----
+The game is based on research showing that humans and AI models handle damaged images differently (Hendrycks & Dietterich, 2019; Geirhos et al., 2018).
 
-##  How a round works
+## How the Game Works
 
-1. The four options appear on their own in the middle of the screen, then slide into place.
-   Reading them is not charged to your clock -- the photo and the countdown wait for you.
-2. A Caltech-101 photo appears, heavily corrupted by one of five modes (pixelate, blur, TV noise,
-   mystery tiles, contrast silhouette), and clarifies in four steps over a 3.5 second countdown.
-3. Four options: the truth plus three distractors drawn from the same super-category.
-4. You lock an answer with keys `1`–`4` or a click. The AI locks when it becomes confident enough.
-5. Both answers are revealed. First to 3, 5 or 10 points wins.
+1. Four answer options appear before the timer starts.
+2. A distorted image appears and becomes clearer in four steps over 3.5 seconds.
+3. The correct answer and three similar options are shown.
+4. The player answers using keys 1–4 or by clicking an option.
+5. The AI also tries to identify the image and locks in its answer when confident enough.
+6. Both answers are revealed. The first to reach 3, 5, or 10 points wins.
 
-The only things the player chooses are the target score and the difficulty. Everything else --
-category, corruption mode, timing -- is handled for them. `Esc` or **Stop** halts a match; resuming
-replays the current round so nobody gets to study a paused image.
+Players can choose the difficulty and target score. Pressing Esc or clicking Stop ends the match. If the game is resumed, the current round restarts to prevent either player from gaining an unfair advantage.
 
----
+## The AI Model
 
-##  The AI opponent
+The game uses CLIP ViT-B/32, a vision model that can compare images with text descriptions.
 
-A **zero-shot CLIP ViT-B/32** classifier. It looks at the same corrupted frames you see, at the same
-moments, and scores the four option strings directly.
+Unlike a traditional image classifier, CLIP does not need to choose from a fixed list of trained image labels. It compares the image with the four answer options and scores how well each option matches.
 
-**Why CLIP and not an ImageNet CNN:** the four options are *text*, so CLIP scores them with no
-label-mapping step. Only 45 of the game's 82 labels exist verbatim in ImageNet's 1000 classes — a
-plain classifier cannot name "Bonsai Tree" or "Euphonium Horn" at all.
+This is useful because some game labels, such as Bonsai Tree and Euphonium Horn, are not available as exact classes in ImageNet's 1,000 categories.
 
-### Difficulty is three honest handicaps, not a win-rate dial
+The model works without training on the game's dataset. This is called **zero-shot classification**.
 
-| | What it does |
-|---|---|
-| `temperature` | The agent samples its answer from the model's real distribution at this temperature. High temperature produces mistakes, but *plausible* ones — a blurry crocodile loses to "Sea Turtle", never to a random option. |
-| `sight_lag` | The agent is shown the frame from this many seconds earlier in the reveal than you see. |
-| `lock_conf` | It watches the image clarify and commits at the first glance where its confidence crosses this bar, so decision time is **emergent**, not sampled from a hardcoded range. |
+## Difficulty Levels
 
-### Measured performance
+The AI's difficulty is controlled by three settings:
 
-`scripts/calibrate_ai.py`, 40 rounds × 5 corruption modes, 3.5s limit:
+- **Temperature:** Controls how consistently the AI chooses the most likely answer. Higher values make it more likely to choose a less likely but still plausible answer.
+- **Sight Lag:** Makes the AI see an earlier version of the image than the player.
+- **Lock Confidence:** Determines how confident the AI must be before committing to an answer.
 
-```
-difficulty   pixelate   blur   noise   tiles   contrast   overall   mean lock
-Easy              30%    48%     48%     30%        40%       39%      0.94s
-Medium            62%    57%     82%     80%        70%       70%      0.96s
-Hard              88%    80%     95%     95%        88%       89%      1.11s
-```
+These settings make the AI's performance change naturally rather than simply assigning it a fixed win rate.
 
-Accuracy swings **15–25 points across corruption modes** inside every profile — that spread is the
-model genuinely reacting to the image. Consistently, pixelation and blur hurt the ViT most (they
-destroy within-patch structure) while high-frequency noise barely does.
+## AI Performance
 
----
+The AI was tested over 40 rounds for each of five image corruption modes, with a 3.5-second time limit.
 
-##  Quick start
+| Difficulty | Pixelate | Blur | Noise | Tiles | Contrast | Overall |
+|---|---:|---:|---:|---:|---:|---:|
+| Easy | 30% | 48% | 48% | 30% | 40% | 39% |
+| Medium | 62% | 57% | 82% | 80% | 70% | 70% |
+| Hard | 88% | 80% | 95% | 95% | 88% | 89% |
 
-If `.venv/` already exists (it does on the original dev machine), you only need:
+The results show that the AI performs differently depending on the type of distortion. Pixelation and blur are generally harder for the model, while noise has less impact in these tests.
+
+The average time taken by the AI to lock an answer was between 0.94 and 1.11 seconds, depending on the difficulty.
+
+These results come from the project's calibration script and represent measured performance, not guaranteed accuracy in every match.
+
+## Technologies Used
+
+- **Python:** Main backend logic and AI integration.
+- **FastAPI:** Handles game requests and serves the application.
+- **CLIP ViT-B/32:** AI image recognition.
+- **Caltech-101:** Dataset containing images of different objects.
+- **React:** Builds the user interface.
+- **JavaScript:** Controls the countdown, animations, and game flow.
+- **Web Audio API:** Generates sound effects without requiring audio files.
+
+## Project Structure
+
+- `backend/ai_engine.py`: Runs the AI model and decides when it locks an answer.
+- `backend/dataset.py`: Loads image categories and creates answer options.
+- `backend/distortion.py`: Applies image distortions and controls how the image becomes clearer.
+- `backend/server.py`: Handles API requests and serves the frontend.
+- `frontend/src/App.jsx`: Contains the main game interface and countdown.
+- `frontend/src/utils/sound.js`: Generates game sounds.
+- `docs/viva-guide.md`: Explains the project and includes questions for presentations and viva exams.
+
+Both the human and the AI see frames generated by the same distortion function. This keeps the image progression consistent and makes the comparison fair.
+
+## How to Run the Project
+
+### If the project is already set up
+
+Run:
 
 ```bash
 .venv/bin/python main.py
 ```
 
-Then open **http://localhost:8000**. To use another port: `env PORT=8010 .venv/bin/python main.py`.
+Then open `http://localhost:8000` in your browser.
 
-### From a fresh clone
+### Setting Up From Scratch
+
+Install the Python dependencies, download the dataset, build the frontend, and start the server:
 
 ```bash
-uv venv && uv pip install -e .            # Python deps into .venv/
-.venv/bin/python scripts/fetch_data.py    # Caltech-101 (~140 MB, not in git)
-cd frontend && npm install && npm run build && cd ..
+uv venv
+uv pip install -e .
+.venv/bin/python scripts/fetch_data.py
+
+cd frontend
+npm install
+npm run build
+cd ..
+
 .venv/bin/python main.py
 ```
 
-The first launch downloads the CLIP weights (~600 MB) into `~/.cache/huggingface`; later launches
-start in about 5 seconds.
+The first launch downloads the CLIP model weights. Later launches reuse the downloaded files.
 
-### Frontend development
+For frontend development, run `npm run dev` inside the `frontend` directory. Rebuild the frontend to see your changes on the main application server.
 
-```bash
-cd frontend && npm run dev
-```
+## Testing and Calibration
 
-Serves on port 5173 and proxies `/api` to 8000, so run the backend alongside it. The backend only
-serves the React app from `frontend/dist`, so **after changing anything in `frontend/src` you must
-run `npm run build`** for it to show up on port 8000.
+The project includes three useful scripts:
 
----
+- `scripts/smoke_test.py`: Checks that the application starts and the game works through its API.
+- `scripts/calibrate_ai.py`: Measures AI accuracy across difficulty levels and distortion modes.
+- `scripts/tune_profiles.py`: Tests different difficulty settings to help select suitable profiles.
 
-##  Scripts
+## Current Status and Limitations
 
-See **[docs/viva-guide.md](docs/viva-guide.md)** for the full explanation of the dataset choice,
-the model, the difficulty calibration, the architecture and a viva question bank.
+The main game features are working, including the AI opponent, five distortion modes, difficulty calibration, a shared image reveal schedule, and pause and stop controls.
 
-| Script | What it does |
-|---|---|
-| `scripts/smoke_test.py` | Boots the app and plays rounds through the HTTP API, asserting the invariants |
-| `scripts/calibrate_ai.py` | Measures AI accuracy per difficulty × corruption mode |
-| `scripts/tune_profiles.py` | Sweeps the difficulty parameters so profiles are set from the curve |
+Some limitations remain:
 
----
+- Reaction times are supplied by the client and are not verified by the server.
+- Active game sessions do not automatically expire.
+- Scores are tracked during a match, but results are not saved permanently.
+- Some image categories appear much more often than others.
+- The dataset has fewer examples in certain categories, such as food and vehicles.
+- The backend still sends the AI's probability scores to the frontend, even though the current interface does not display them.
 
-## 🛠️ Structure
-
-```
-backend/
-  ai_engine.py    CLIP zero-shot opponent: glances, real probabilities, confidence-based locking
-  dataset.py      Caltech-101 catalog, category mapping, distractor generation
-  distortion.py   Five corruption modes + frame_at(), the single source of truth for the reveal clock
-  server.py       FastAPI endpoints and static hosting
-frontend/src/
-  App.jsx         Game loop, RAF countdown, telemetry UI
-  utils/sound.js  Web Audio synthesiser (no audio assets)
-docs/
-  design-brief.md Game design, dataset and model research
-  code-audit.md   Audit of the first implementation and the remaining work
-```
-
-Both players' pixels come from one function: `distortion.frame_at(image, mode, t, time_limit, seed)`,
-called with one seed per round. The frame schedule is published to the client in the round payload
-(`frame_fractions`) rather than hardcoded in two places.
-
----
-
-##  Status
-
-Working: real CLIP opponent, measured difficulty calibration, shared reveal clock, five corruption
-modes, pause/stop, smoke tests, and a UI rebuilt around the photograph.
-
-Known gaps, tracked in [docs/code-audit.md](docs/code-audit.md): no server-side deadline enforcement
-(reaction times are client-supplied), `ACTIVE_ROUNDS` has no TTL, flat 1-point scoring, Caltech-101
-class imbalance (Airplane and Motorcycle are 23% of rounds), thin `food` and `vehicles` categories,
-and no persistence of results.
-
-The reveal response still carries the AI's full probability distribution (`ai.probs`) even though
-the UI no longer shows it -- deliberately kept so a confidence panel can be added back for the
-report without touching the backend.
+Overall, Vision Duel is an interactive way to compare human and AI image recognition under different levels of visual distortion.
