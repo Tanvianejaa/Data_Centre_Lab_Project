@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+/*
+  Vision Duel theme — warm paper, not neon.
+
+  The subject matter is photographs of real things, and photographs read badly
+  on near-black slate. A warm off-white ground makes them the brightest thing
+  on screen, which is where the player should be looking.
+
+  Two accents carry the whole game: clay for the human (warm), graphite for the
+  machine (cool, deliberately unglamorous). Green and red appear only at the
+  moment of truth, so they always mean "right" and "wrong" and never decoration.
+*/
+@theme {
+  --color-paper: #f2ede3;
+  --color-card: #fffdf8;
+  --color-rule: #e0d8c9;
+  --color-rule-strong: #c9bda7;
+
+  --color-ink: #1c1917;
+  --color-ink-soft: #57534e;
+  --color-ink-faint: #a8a29e;
+
+  --color-clay: #bf4d1f;
+  --color-clay-soft: #fbe9df;
+  --color-graphite: #3f3f46;
+  --color-graphite-soft: #e8e6e1;
+
+  --color-good: #15803d;
+  --color-good-soft: #dcf0e2;
+  --color-bad: #b4232a;
+  --color-bad-soft: #fae0e0;
+}
+
+@layer base {
+  html {
+    background: var(--color-paper);
+  }
+
+  body {
+    @apply bg-paper text-ink antialiased min-h-screen overflow-x-hidden;
+    font-feature-settings: "ss01", "cv01";
+  }
+
+  /* The timer, scores and countdown are numbers that change constantly;
+     tabular figures stop them jittering as the digits swap. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* The app previously used `animate-in fade-in zoom-in-95`, which are
+   tailwindcss-animate utilities. That plugin was never installed, so every
+   entrance animation in the game silently did nothing. These are the real
+   keyframes. */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pop {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
+@keyframes thinking {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 1; }
+}
+
+.anim-rise  { animation: rise 0.28s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+.anim-pop   { animation: pop 0.22s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+.anim-shake { animation: shake 0.36s ease-in-out; }
+.anim-think { animation: thinking 1.1s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-rise, .anim-pop, .anim-shake, .anim-think {
+    animation: none;
+  }
+}
